@@ -1,4 +1,5 @@
 vim.api.nvim_create_user_command("JupyniumStartSync", Jupynium_start_sync_cmd, { nargs = "?" })
+vim.api.nvim_create_user_command("JupyniumStartSyncIpynb", Jupynium_start_sync_ipynb_cmd, {})
 vim.api.nvim_create_user_command("JupyniumLoadFromIpynbTab", Jupynium_load_from_ipynb_tab_cmd, { nargs = 1 })
 vim.api.nvim_create_user_command(
   "JupyniumLoadFromIpynbTabAndStartSync",

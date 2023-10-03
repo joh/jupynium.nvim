@@ -180,6 +180,14 @@ function Jupynium_start_sync_cmd(args)
   Jupynium_start_sync(buf, filename)
 end
 
+function Jupynium_start_sync_ipynb_cmd()
+  local buf = vim.api.nvim_get_current_buf()
+  local filename = vim.api.nvim_buf_get_name(buf)
+  local basename = vim.fn.fnamemodify(filename, ":t:s?\\..*??")
+
+  Jupynium_start_sync(buf, basename .. ".ipynb")
+end
+
 ---Start synchronising the buffer with the ipynb file
 ---@param bufnr integer buffer number
 ---@param ipynb_filename string name of the ipynb file
