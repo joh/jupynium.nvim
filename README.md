@@ -280,7 +280,7 @@ See [#88](https://github.com/kiyoon/jupynium.nvim/pull/88) for more detail and a
 - Execute `:JupyniumStartSync`. This will create an `Untitled.ipynb` file on the browser.
 - Now you can type `# %%` in Neovim to create a code cell.
   - You'll see everything you type below that will be synchronised in the browser.
-  - Execute cells using the default keybind `<space>x`.
+  - Execute cells using the default keybind `<leader>x`.
 
 For detailed instructions, see Usage below.
 
@@ -414,12 +414,12 @@ In other languages like R, you'll need to comment every line.
 
 ## ⌨️ Keybindings
 
-- `<space>x`: Execute selected cells
-- `<space>c`: Clear selected cells
+- `<leader>x`: Execute selected cells
+- `<leader>c`: Clear selected cells
 - `<PageUp>`, `<PageDown>`: Scroll notebook
-- `<space>js`: Scroll to cell (if autoscroll is disabled)
-- `<space>K`: Hover (inspect a variable)
-- `<space>jo`: Toggle output scroll (when output is long)
+- `<leader>js`: Scroll to cell (if autoscroll is disabled)
+- `<leader>K`: Hover (inspect a variable)
+- `<leader>jo`: Toggle output scroll (when output is long)
 
 If you want custom keymaps, add `use_default_keybindings = false` and follow `M.default_keybindings()` in [lua/jupynium/init.lua](lua/jupynium/init.lua).
 
@@ -428,7 +428,7 @@ If you want custom keymaps, add `use_default_keybindings = false` and follow `M.
 - `[j`, `]j`: go to previous / next cell separator
   - Repeat with `;` and `,` if you have [nvim-treesitter-textobjects](https://github.com/nvim-treesitter/nvim-treesitter-textobjects).
     Follow their instructions for keybindings for this.
-- `<space>jj`: go to current cell separator
+- `<leader>jj`: go to current cell separator
 - `vaj`,`vij`, `vaJ`, `viJ`: select current cell
   - `a`: include separator, `i`: exclude separator
   - `j`: exclude next separator, `J`: include next separator

@@ -54,31 +54,31 @@ end
 function M.set_default_keymaps(buf_id)
   vim.keymap.set(
     { "n", "x" },
-    "<space>x",
+    "<leader>x",
     "<cmd>JupyniumExecuteSelectedCells<CR>",
     { buffer = buf_id, desc = "Jupynium execute selected cells" }
   )
   vim.keymap.set(
     { "n", "x" },
-    "<space>c",
+    "<leader>c",
     "<cmd>JupyniumClearSelectedCellsOutputs<CR>",
     { buffer = buf_id, desc = "Jupynium clear selected cells" }
   )
   vim.keymap.set(
     { "n" },
-    "<space>K",
+    "<leader>K",
     "<cmd>JupyniumKernelHover<cr>",
     { buffer = buf_id, desc = "Jupynium hover (inspect a variable)" }
   )
   vim.keymap.set(
     { "n", "x" },
-    "<space>js",
+    "<leader>js",
     "<cmd>JupyniumScrollToCell<cr>",
     { buffer = buf_id, desc = "Jupynium scroll to cell" }
   )
   vim.keymap.set(
     { "n", "x" },
-    "<space>jo",
+    "<leader>jo",
     "<cmd>JupyniumToggleSelectedCellsOutputsScroll<cr>",
     { buffer = buf_id, desc = "Jupynium toggle selected cell output scroll" }
   )
