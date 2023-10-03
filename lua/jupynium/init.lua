@@ -54,19 +54,39 @@ end
 function M.set_default_keymaps(buf_id)
   vim.keymap.set(
     { "n", "x" },
-    "<leader>x",
+    "<leader>jx",
+    "<cmd>JupyniumExecuteSelectedCells<CR>",
+    { buffer = buf_id, desc = "Jupynium execute selected cells" }
+  )
+  vim.keymap.set(
+    { "n", "x", "i" },
+    "<C-enter>",
     "<cmd>JupyniumExecuteSelectedCells<CR>",
     { buffer = buf_id, desc = "Jupynium execute selected cells" }
   )
   vim.keymap.set(
     { "n", "x" },
-    "<leader>c",
+    "<leader>jX",
+    [[<cmd>JupyniumExecuteSelectedCells<cr>
+      <cmd>lua require'jupynium.textobj'.goto_next_cell_separator()<cr>]],
+    { buffer = buf_id, desc = "Jupynium execute selected cells and go to next Jupynium cell" }
+  )
+  vim.keymap.set(
+    { "n", "x", "i" },
+    "<S-enter>",
+    [[<cmd>JupyniumExecuteSelectedCells<cr>
+      <cmd>lua require'jupynium.textobj'.goto_next_cell_separator()<cr>]],
+    { buffer = buf_id, desc = "Jupynium execute selected cells and go to next Jupynium cell" }
+  )
+  vim.keymap.set(
+    { "n", "x" },
+    "<leader>jc",
     "<cmd>JupyniumClearSelectedCellsOutputs<CR>",
     { buffer = buf_id, desc = "Jupynium clear selected cells" }
   )
   vim.keymap.set(
     { "n" },
-    "<leader>K",
+    "<leader>jK",
     "<cmd>JupyniumKernelHover<cr>",
     { buffer = buf_id, desc = "Jupynium hover (inspect a variable)" }
   )
