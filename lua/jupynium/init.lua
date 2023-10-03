@@ -66,6 +66,12 @@ function M.set_default_keymaps(buf_id)
   )
   vim.keymap.set(
     { "n", "x" },
+    "<leader>jq",
+    "<cmd>JupyniumStopSync<cr>",
+    { buffer = buf_id, desc = "Jupynium stop sync current buffer" }
+  )
+  vim.keymap.set(
+    { "n", "x" },
     "<leader>jx",
     "<cmd>JupyniumExecuteSelectedCells<CR>",
     { buffer = buf_id, desc = "Jupynium execute selected cells" }
