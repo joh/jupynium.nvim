@@ -248,7 +248,7 @@ def start_sync_with_filename(
         for notebook_item in notebook_items:
             # is notebook?
             try:
-                notebook_item.find_element(By.CSS_SELECTOR, "i.notebook_icon")
+                notebook_item.find_element(By.CSS_SELECTOR, "i.notebook_icon, i.running_notebook_icon")
             except NoSuchElementException:
                 continue
 
