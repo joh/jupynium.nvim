@@ -77,7 +77,7 @@ function M.set_default_keymaps(buf_id)
     { buffer = buf_id, desc = "Jupynium execute selected cells" }
   )
   vim.keymap.set(
-    { "n", "x", "i" },
+    { "n", "x" },
     "<C-enter>",
     "<cmd>JupyniumExecuteSelectedCells<CR>",
     { buffer = buf_id, desc = "Jupynium execute selected cells" }
@@ -90,7 +90,7 @@ function M.set_default_keymaps(buf_id)
     { buffer = buf_id, desc = "Jupynium execute selected cells and go to next Jupynium cell" }
   )
   vim.keymap.set(
-    { "n", "x", "i" },
+    { "n", "x" },
     "<S-enter>",
     [[<cmd>JupyniumExecuteSelectedCells<cr>
       <cmd>lua require'jupynium.textobj'.goto_next_cell_separator()<cr>]],
