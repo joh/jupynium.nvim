@@ -5,6 +5,9 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from os import PathLike
+from pathlib import Path
+from typing import Any
 
 from pkg_resources import resource_stream
 from selenium.common.exceptions import (
@@ -12,6 +15,7 @@ from selenium.common.exceptions import (
     NoSuchElementException,
 )
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
 
 from . import selenium_helpers as sele
 from .buffer import JupyniumBuffer
@@ -73,6 +77,10 @@ CompletionItemKind = {
 }
 
 
+class StartSyncError(Exception):
+    pass
+
+
 @dataclass
 class OnLinesArgs:
     lines: list[str]
@@ -81,12 +89,12 @@ class OnLinesArgs:
     new_end_row: int
 
     # Optimisations
-    def is_chainable(self, other: "OnLinesArgs") -> bool:
+    def is_chainable(self, other: OnLinesArgs) -> bool:
         return (
             self.start_row == other.start_row and self.new_end_row == other.old_end_row
         )
 
-    def chain(self, other: "OnLinesArgs") -> "OnLinesArgs":
+    def chain(self, other: OnLinesArgs) -> OnLinesArgs:
         assert self.is_chainable(other)
         return OnLinesArgs(
             other.lines,
@@ -111,7 +119,7 @@ class PrevLazyArgs:
     on_lines_args: OnLinesArgs | None = None
     update_selection_args: UpdateSelectionArgs | None = None
 
-    def process(self, nvim_info: NvimInfo, driver, bufnr) -> None:
+    def process(self, nvim_info: NvimInfo, driver: WebDriver, bufnr: int) -> None:
         if self.on_lines_args is not None:
             process_on_lines_event(nvim_info, driver, bufnr, self.on_lines_args)
             self.on_lines_args = None
@@ -128,7 +136,7 @@ class PrevLazyArgsPerBuf:
 
     data: dict[int, PrevLazyArgs] = dataclasses.field(default_factory=dict)
 
-    def process(self, bufnr: int, nvim_info: NvimInfo, driver) -> None:
+    def process(self, bufnr: int, nvim_info: NvimInfo, driver: WebDriver) -> None:
         if bufnr in self.data:
             self.data[bufnr].process(nvim_info, driver, bufnr)
 
@@ -138,7 +146,11 @@ class PrevLazyArgsPerBuf:
         self.data.clear()
 
     def lazy_on_lines_event(
-        self, nvim_info: NvimInfo, driver, bufnr: int, on_lines_args: OnLinesArgs
+        self,
+        nvim_info: NvimInfo,
+        driver: WebDriver,
+        bufnr: int,
+        on_lines_args: OnLinesArgs,
     ) -> None:
         if bufnr not in self.data:
             self.data[bufnr] = PrevLazyArgs()
@@ -161,7 +173,7 @@ class PrevLazyArgsPerBuf:
         self.data[bufnr].update_selection_args = update_selection_args
 
 
-def process_events(nvim_info: NvimInfo, driver):
+def process_events(nvim_info: NvimInfo, driver: WebDriver):
     """
     Controls events for a single nvim, and a single cycle of events.
 
@@ -176,6 +188,7 @@ def process_events(nvim_info: NvimInfo, driver):
     if nvim_info.home_window not in driver.window_handles:
         nvim_info.nvim.lua.Jupynium_notify.error(
             ["Do not close the main page. Detaching the nvim from Jupynium.."],
+            "error_close_main_page",
             async_=True,
         )
         return False, None
@@ -229,15 +242,17 @@ def start_sync_with_filename(
     buf_filetype: str,
     conda_or_venv_path: str | None,
     nvim_info: NvimInfo,
-    driver,
+    driver: WebDriver,
 ):
     """
-    Start sync using a filename (not tab index)
+    Start sync using a filename (not tab index).
+
     filename has to end with .ipynb
     """
     driver.switch_to.window(nvim_info.home_window)
     sele.wait_until_notebook_list_loaded(driver)
 
+    prev_windows = None
     if ipynb_filename == "":
         file_found = False
     else:
@@ -262,10 +277,11 @@ def start_sync_with_filename(
                 driver.execute_script("arguments[0].scrollIntoView();", notebook_elem)
                 notebook_elem.click()
                 file_found = True
-                sele.wait_until_new_window(driver, prev_windows)
+                sele.wait_until_new_window(driver, list(prev_windows))
                 break
 
     if file_found:
+        assert prev_windows is not None
         new_window = set(driver.window_handles) - set(prev_windows)
         assert len(new_window) == 1
         new_window = new_window.pop()
@@ -275,7 +291,7 @@ def start_sync_with_filename(
 
         if ask:
             sync_input = nvim_info.nvim.eval(
-                """input("Press 'v' to sync from n[v]im, 'i' to load from [i]pynb and sync. (v/i/[c]ancel): ")"""  # noqa: E501
+                """input("Press 'v' to sync from n[v]im, 'i' to load from [i]pynb and sync. (v/i/[c]ancel): ")"""
             )
             sync_input = str(sync_input).strip()
         else:
@@ -301,7 +317,16 @@ def start_sync_with_filename(
         )
         if kernel_name is None:
             kernel_name = "python3"
-        kernel_btn = driver.find_element(By.ID, f"kernel-{kernel_name}")
+
+        try:
+            kernel_btn = driver.find_element(By.ID, f"kernel-{kernel_name}")
+        except NoSuchElementException:
+            # match anything with ID starting with kernel-
+            kernel_btns = driver.find_elements(By.CSS_SELECTOR, "[id^=kernel-]")
+            if len(kernel_btns) == 0:
+                raise StartSyncError("No kernel found in the kernel list.") from None
+            kernel_btn = kernel_btns[0]
+
         driver.execute_script("arguments[0].scrollIntoView(true);", kernel_btn)
         prev_windows = set(driver.window_handles)
         try:
@@ -310,7 +335,7 @@ def start_sync_with_filename(
             new_btn.click()
             kernel_btn.click()
 
-        sele.wait_until_new_window(driver, prev_windows)
+        sele.wait_until_new_window(driver, list(prev_windows))
         new_window = set(driver.window_handles) - prev_windows
         assert len(new_window) == 1
         new_window = new_window.pop()
@@ -327,10 +352,10 @@ def start_sync_with_filename(
         nvim_info.jupbufs[bufnr].full_sync_to_notebook(driver)
 
 
-def choose_default_kernel(driver, page_type: str, buf_filetype, conda_or_venv_path):
-    """
-    Choose kernel based on buffer's filetype and conda env
-    """
+def choose_default_kernel(
+    driver: WebDriver, page_type: str, buf_filetype: str, conda_or_venv_path: str | None
+):
+    """Choose kernel based on buffer's filetype and conda env."""
     if page_type == "notebook":
         kernel_specs = driver.execute_script(
             "return Jupyter.kernelselector.kernelspecs;"
@@ -347,27 +372,28 @@ def choose_default_kernel(driver, page_type: str, buf_filetype, conda_or_venv_pa
             valid_kernel_names.append(kernel_name)
 
     def match_with_path(env_path: str) -> str | None:
-        """Match kernel executable path with conda/virtual environment bin directory
+        """
+        Match kernel executable path with conda/virtual environment bin directory.
 
         Args:
-            env_path (str): Path of the conda/virtual environment directory
+            env_path: Path of the conda/virtual environment directory
 
         Returns:
             str: Name of the kernel matching the environment, returns None if no match
         """
         for kernel_name in valid_kernel_names:
             try:
-                kernel_exec_path = kernel_specs[kernel_name]["spec"]["argv"][0]
-                exec_name = os.path.basename(kernel_exec_path)
-                env_exec_path = os.path.join(env_path, "bin", exec_name)
+                kernel_exec_path = Path(kernel_specs[kernel_name]["spec"]["argv"][0])
+                exec_name = kernel_exec_path.name
+                env_exec_path = Path(env_path) / "bin" / exec_name
                 if kernel_exec_path == env_exec_path:
                     return kernel_name
             except (KeyError, IndexError):
                 pass
-        return
+        return None
 
     if len(valid_kernel_names) == 0:
-        return
+        return None
     elif len(valid_kernel_names) == 1:
         return valid_kernel_names[0]
     elif conda_or_venv_path is not None and conda_or_venv_path != "":
@@ -395,20 +421,25 @@ def choose_default_kernel(driver, page_type: str, buf_filetype, conda_or_venv_pa
         for valid_kernel_name in valid_kernel_names_old:
             if (
                 "conda_env_path"
-                not in kernel_specs[valid_kernel_name]["spec"]["metadata"].keys()
+                not in kernel_specs[valid_kernel_name]["spec"]["metadata"]
             ):
                 valid_kernel_names.append(valid_kernel_name)
 
         if len(valid_kernel_names) == 0:
-            return
+            return None
         else:
             return valid_kernel_names[0]
 
-    return
+    return None
 
 
-def process_request_event(nvim_info: NvimInfo, driver, event):
+def process_request_event(nvim_info: NvimInfo, driver: WebDriver, event: list[Any]):
     """
+    Process a request event, where an event can be request or notification.
+
+    Request event requires a response.
+    Notification event doesn't require a response.
+
     Returns:
         status (bool)
         request_event (rpcrequest event): to notify nvim after cleared up.
@@ -430,16 +461,23 @@ def process_request_event(nvim_info: NvimInfo, driver, event):
             if ipynb_filename != "" and not ipynb_filename.lower().endswith(".ipynb"):
                 ipynb_filename += ".ipynb"
 
-            start_sync_with_filename(
-                bufnr,
-                ipynb_filename,
-                ask,
-                content,
-                buf_filetype,
-                conda_or_venv_path,
-                nvim_info,
-                driver,
-            )
+            try:
+                start_sync_with_filename(
+                    bufnr,
+                    ipynb_filename,
+                    ask,
+                    content,
+                    buf_filetype,
+                    conda_or_venv_path,
+                    nvim_info,
+                    driver,
+                )
+            except StartSyncError as e:
+                nvim_info.nvim.lua.Jupynium_notify.error(
+                    ["Error while starting sync:", str(e)], async_=True
+                )
+                event[3].send("N")
+                return False, None
         else:
             # start sync with tab index
             tab_idx = int(ipynb_filename)
@@ -547,7 +585,7 @@ def skip_bloated(nvim_info: NvimInfo):
             nvim_info.nvim.vars["jupynium_message_bloated"] = False
 
             logger.info("Reloading all buffers from nvim")
-            for buf_id in nvim_info.jupbufs.keys():
+            for buf_id in nvim_info.jupbufs:
                 nvim_info.nvim.lua.Jupynium_grab_entire_buffer(buf_id)
 
         return True
@@ -563,7 +601,7 @@ def lazy_on_lines_event(
 ):
     """
     Lazy-process on_lines events.
-    ----
+
     Often, completion plugins like coc.nvim and nvim-cmp spams on_lines events.
     But they will have the same (bufnr, start_row, old_end_row, new_end_row) values.
     If the series of line changes are chainable, we can just process the last one.
@@ -596,10 +634,9 @@ def process_on_lines_event(
     )
 
 
-# flake8: noqa: C901
 def process_notification_event(
     nvim_info: NvimInfo,
-    driver,
+    driver: WebDriver,
     event,
     prev_lazy_args_per_buf: PrevLazyArgsPerBuf | None = None,
 ):
@@ -662,31 +699,51 @@ def process_notification_event(
                 ".ju." in buf_filepath
                 and nvim_info.nvim.vars["jupynium_auto_download_ipynb"]
             ):
-                output_ipynb_path = os.path.splitext(buf_filepath)[0]
-                output_ipynb_path = os.path.splitext(output_ipynb_path)[0]
-                output_ipynb_path += ".ipynb"
+                # .ju.py -> .ipynb
+                output_ipynb_path = os.path.splitext(buf_filepath)[0]  # noqa: PTH122
+                output_ipynb_path = Path(output_ipynb_path).with_suffix(".ipynb")
 
-                download_ipynb(driver, nvim_info, bufnr, output_ipynb_path)
+                try:
+                    download_ipynb(driver, nvim_info, bufnr, output_ipynb_path)
+                except OSError as e:
+                    logger.warning(
+                        f"Failed to auto-download ipynb with error: {e}.\n"
+                        "Maybe a remote nvim is used and the path "
+                        f"{output_ipynb_path} is not accessible on the local machine."
+                    )
         elif event[1] == "download_ipynb":
             (buf_filepath, filename) = event_args
             assert buf_filepath != ""
 
+            buf_filepath = Path(buf_filepath)
+            filename = Path(filename)
+
             if filename is not None and filename != "":
-                if os.path.isabs(filename):
+                if filename.is_absolute():
                     output_ipynb_path = filename
                 else:
-                    output_ipynb_path = os.path.join(
-                        os.path.dirname(buf_filepath), filename
-                    )
+                    output_ipynb_path = buf_filepath.parent / filename
 
-                if not output_ipynb_path.endswith(".ipynb"):
-                    output_ipynb_path += ".ipynb"
+                if output_ipynb_path.suffix != ".ipynb":
+                    output_ipynb_path = output_ipynb_path.with_suffix(".ipynb")
             else:
-                output_ipynb_path = os.path.splitext(buf_filepath)[0]
-                output_ipynb_path = os.path.splitext(output_ipynb_path)[0]
-                output_ipynb_path += ".ipynb"
+                # change suffix .ju.py -> .ipynb
+                output_ipynb_path = os.path.splitext(buf_filepath)[0]  # noqa: PTH122
+                output_ipynb_path = Path(output_ipynb_path).with_suffix(".ipynb")
 
-            download_ipynb(driver, nvim_info, bufnr, output_ipynb_path)
+            try:
+                download_ipynb(driver, nvim_info, bufnr, output_ipynb_path)
+            except OSError as e:
+                nvim_info.nvim.lua.Jupynium_notify.error(
+                    ["Failed to download ipynb file to", output_ipynb_path],
+                    "error_download_ipynb",
+                    async_=True,
+                )
+                logger.error(
+                    f"Failed to download ipynb with error: {e}.\n"
+                    f"Maybe the path {output_ipynb_path} is not accessible "
+                    "on the local machine."
+                )
 
         elif event[1] == "toggle_selected_cells_outputs_scroll":
             driver.switch_to.window(nvim_info.window_handles[bufnr])
@@ -732,14 +789,14 @@ def process_notification_event(
 
             # Code from jupyter-kernel.nvim
             has_experimental_types = (
-                "metadata" in reply.keys()
-                and "_jupyter_types_experimental" in reply["metadata"].keys()
+                "metadata" in reply
+                and "_jupyter_types_experimental" in reply["metadata"]
             )
             if has_experimental_types:
                 replies = reply["metadata"]["_jupyter_types_experimental"]
                 matches = []
                 for match in replies:
-                    if "signature" in match.keys():
+                    if "signature" in match:
                         matches.append(
                             {
                                 "label": match.get("text", ""),
@@ -808,7 +865,10 @@ def process_notification_event(
 
 
 def update_cell_selection(
-    nvim_info: NvimInfo, driver, bufnr, update_selection_args: UpdateSelectionArgs
+    nvim_info: NvimInfo,
+    driver: WebDriver,
+    bufnr: int,
+    update_selection_args: UpdateSelectionArgs,
 ):
     cursor_pos_row, visual_start_row = dataclasses.astuple(update_selection_args)
 
@@ -883,13 +943,19 @@ def update_cell_selection(
                         "jupynium_autoscroll_cell_top_margin_percent", 0
                     )
                     driver.execute_script(
-                        "Jupyter.notebook.scroll_cell_percent(arguments[0], arguments[1], 0);",  # noqa: E501
+                        "Jupyter.notebook.scroll_cell_percent(arguments[0], arguments[1], 0);",
                         cell_index,
                         top_margin_percent,
                     )
 
 
-def download_ipynb(driver, nvim_info, bufnr, output_ipynb_path):
+def download_ipynb(
+    driver: WebDriver,
+    nvim_info: NvimInfo,
+    bufnr: int,
+    output_ipynb_path: str | PathLike,
+):
+    output_ipynb_path = str(output_ipynb_path)
     driver.switch_to.window(nvim_info.window_handles[bufnr])
 
     with open(output_ipynb_path, "w") as f:
@@ -902,12 +968,13 @@ def download_ipynb(driver, nvim_info, bufnr, output_ipynb_path):
         )
         nvim_info.nvim.lua.Jupynium_notify.info(
             ["Downloaded ipynb file to", output_ipynb_path],
+            "download_ipynb",
             async_=True,
         )
         logger.info(f"Downloaded ipynb to {output_ipynb_path}")
 
 
-def scroll_to_cell(driver, nvim_info, bufnr, cursor_pos_row):
+def scroll_to_cell(driver: WebDriver, nvim_info: NvimInfo, bufnr: int, cursor_pos_row):
     # Which cell?
     cell_index, _, _ = nvim_info.jupbufs[bufnr].get_cell_index_from_row(cursor_pos_row)
 

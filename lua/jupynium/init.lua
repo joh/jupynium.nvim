@@ -18,7 +18,7 @@ function M.get_folds()
   local line_types = cells.line_types_entire_buf()
 
   for i, line_type in ipairs(line_types) do
-    if utils.string_begins_with(line_type, "metadata") then
+    if vim.startswith(line_type, "metadata") then
       -- make sure metadata is before cells
       if vim.tbl_isempty(fold) then
         if vim.tbl_isempty(metadata) then
@@ -29,7 +29,7 @@ function M.get_folds()
         end
       end
     end
-    if utils.string_begins_with(line_type, "cell separator") then
+    if vim.startswith(line_type, "cell separator") then
       if vim.tbl_isempty(fold) then
         fold.startLine = i - 1
         -- close metadata
@@ -134,6 +134,7 @@ function M.default_keybindings(augroup)
   })
 end
 
+---@param opts Jupynium.UserConfig?
 function M.setup(opts)
   -- NOTE: This may be called twice if you lazy load the plugin
   -- The first time will be with the default opts.
@@ -173,6 +174,14 @@ function M.setup(opts)
   end
 
   highlighter.setup(options.opts)
+
+  -- NOTE: if you don't define a local variable, the vim.g. variable won't have any value. Weird.
+  -- So we define a local variable and then assign it to the global variable.
+  local notify_ignore_codes = {}
+  for _, code in ipairs(options.opts.notify.ignore) do
+    notify_ignore_codes[code] = true
+  end
+  vim.g.jupynium_notify_ignore_codes = notify_ignore_codes
 
   vim.g.__jupynium_setup_completed = true
 end

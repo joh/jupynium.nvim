@@ -76,7 +76,12 @@ function Jupynium_rpcnotify(event, buf, ensure_syncing, ...)
   rpc(vim.rpcnotify, event, buf, ...)
 end
 
--- block until jupynium responds to the message
+---block until jupynium responds to the message
+---@param event string
+---@param buf integer?
+---@param ensure_syncing boolean
+---@param ... any
+---@return any
 function Jupynium_rpcrequest(event, buf, ensure_syncing, ...)
   if ensure_syncing then
     if Jupynium_syncing_bufs[buf] == nil then
@@ -93,7 +98,7 @@ end
 --- API: Execute javascript in the browser. It will switch to the correct tab before executing.
 ---@param bufnr integer | nil If given, before executing the code it will switch to the tab of this buffer. Requires syncing in advance.
 ---@param code string Javascript code
----@return boolean, object: Success, response
+---@return boolean, any?: Success, response
 function Jupynium_execute_javascript(bufnr, code)
   local ensure_syncing = true
   if bufnr == nil then
@@ -191,7 +196,7 @@ end
 ---Start synchronising the buffer with the ipynb file
 ---@param bufnr integer buffer number
 ---@param ipynb_filename string name of the ipynb file
----@param ask boolean whether to ask for confirmation
+---@param ask boolean? whether to ask for confirmation
 function Jupynium_start_sync(bufnr, ipynb_filename, ask)
   if bufnr == nil or bufnr == 0 then
     bufnr = vim.api.nvim_get_current_buf()
@@ -211,7 +216,7 @@ function Jupynium_start_sync(bufnr, ipynb_filename, ask)
   local content = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
   -- Used for choosing the correct kernel
-  local buf_filetype = vim.api.nvim_buf_get_option(bufnr, "filetype")
+  local buf_filetype = vim.bo[bufnr].filetype
   local conda_or_venv_path = vim.env.CONDA_PREFIX or vim.env.VIRTUAL_ENV
 
   local response =
@@ -412,8 +417,8 @@ function Jupynium_download_ipynb_cmd(args)
 end
 
 function Jupynium_auto_download_ipynb_toggle()
-  vim.g.jupynium_autodownload_ipynb = 1 - vim.g.jupynium_auto_download_ipynb
-  Jupynium_notify.info { "Auto download ipynb is now ", vim.g.jupynium_auto_download_ipynb == 1 and "on" or "off" }
+  vim.g.jupynium_auto_download_ipynb = not vim.g.jupynium_auto_download_ipynb
+  Jupynium_notify.info { "Auto download ipynb is now ", vim.g.jupynium_auto_download_ipynb and "on" or "off" }
 end
 
 function Jupynium_scroll_up(bufnr)
@@ -443,8 +448,8 @@ function Jupynium_scroll_down(bufnr)
 end
 
 function Jupynium_autoscroll_toggle()
-  vim.g.jupynium_autoscroll = 1 - vim.g.jupynium_autoscroll
-  Jupynium_notify.info { "Autoscroll is now ", vim.g.jupynium_autoscroll == 1 and "on" or "off" }
+  vim.g.jupynium_autoscroll_enable = not vim.g.jupynium_autoscroll_enable
+  Jupynium_notify.info { "Autoscroll is now ", vim.g.jupynium_autoscroll and "on" or "off" }
 end
 
 function Jupynium_clear_selected_cells_outputs(bufnr)
@@ -495,11 +500,6 @@ function Jupynium_kernel_change(bufnr, kernel_name)
   Jupynium_rpcnotify("kernel_change", bufnr, true, kernel_name)
 end
 
-function Jupynium_restart_kernel(bufnr)
-  Jupynium_notify.warn { [[Sorry! Command name changed.]], [[Please use :JupyniumKernelRestart]] }
-  return Jupynium_kernel_restart(bufnr)
-end
-
 function Jupynium_kernel_restart(bufnr)
   -- note that the kernel name is different from the display name in the kernel list in Jupyter Notebook.
   if bufnr == nil or bufnr == 0 then
@@ -525,11 +525,6 @@ function Jupynium_kernel_interrupt(bufnr)
   end
 
   Jupynium_rpcnotify("kernel_interrupt", bufnr, true)
-end
-
-function Jupynium_select_kernel(bufnr)
-  Jupynium_notify.warn { [[Sorry! Command name changed.]], [[Please use :JupyniumKernelSelect]] }
-  return Jupynium_kernel_select(bufnr)
 end
 
 function Jupynium_kernel_select(bufnr)
@@ -590,7 +585,7 @@ end
 ---@param bufnr integer
 ---@param code_line string
 ---@param col integer 0-indexed
----@return table | nil
+---@return table?
 function Jupynium_kernel_inspect(bufnr, code_line, col)
   if bufnr == nil or bufnr == 0 then
     bufnr = vim.api.nvim_get_current_buf()
@@ -687,7 +682,7 @@ end
 ---@param code_line string
 ---@param col integer 0-indexed
 ---@param callback function nvim-cmp complete callback.
----@return table | nil
+---@return table?
 function Jupynium_kernel_complete_async(bufnr, code_line, col, callback)
   if bufnr == nil or bufnr == 0 then
     bufnr = vim.api.nvim_get_current_buf()

@@ -1,6 +1,5 @@
 # Jupynium: Control Jupyter Notebook on Neovim with ZERO Compromise
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 <a href="https://github.com/kiyoon/jupynium.nvim/actions/workflows/tests.yml">
 <img src="https://github.com/kiyoon/jupynium.nvim/workflows/Tests/badge.svg?style=flat" />
 </a>
@@ -34,7 +33,7 @@ The Jupynium server will receive events from Neovim, keep the copy of the buffer
   - Other browsers are not supported due to their limitation with Selenium (see [#49](https://github.com/kiyoon/jupynium.nvim/issues/49#issuecomment-1443304753))
 - 🦎 Mozilla geckodriver
   - May already be installed with Firefox. Check `geckodriver -V`
-- 🐍 Python >= 3.7
+- 🐍 Python >= 3.8
   - Supported Python installation methods include system-level and [Conda](https://docs.conda.io/en/latest/miniconda.html)
 - 📔 Jupyter Notebook >= 6.2
   - Jupyter Lab is not supported
@@ -52,7 +51,7 @@ Don't forget to upgrade your notebook and install nbclassic (`pip install --upgr
 
 ### Install Python
 
-Don't have system Python 3.7? You can use [Conda](https://docs.conda.io/en/latest/miniconda.html):
+Don't have system Python 3.8? You can use [Conda](https://docs.conda.io/en/latest/miniconda.html):
 
 ```bash
 conda create -n jupynium python=3
@@ -217,6 +216,16 @@ require("jupynium").setup({
     floating_win_opts = {
       max_width = 84,
       border = "none",
+    },
+  },
+
+  notify = {
+    ignore = {
+      -- "download_ipynb",
+      -- "error_download_ipynb",
+      -- "attach_and_init",
+      -- "error_close_main_page",
+      -- "notebook_closed",
     },
   },
 })
@@ -570,4 +579,4 @@ You probably would have accidentally modified directly from the notebook.
 - I spent my whole Christmas and New Year holidays (and more) just making this plugin.
 - This is the star history chart with relevant plugins. Thank you for helping it grow!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=kiyoon/jupynium.nvim,untitled-ai/jupyter_ascending,untitled-ai/jupyter_ascending.vim,dccsillag/magma-nvim,luk400/vim-jukit&type=Date)](https://star-history.com/#kiyoon/jupynium.nvim&untitled-ai/jupyter_ascending&untitled-ai/jupyter_ascending.vim&dccsillag/magma-nvim&luk400/vim-jukit&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=kiyoon/jupynium.nvim,imbue-ai/jupyter_ascending,imbue-ai/jupyter_ascending.vim,dccsillag/magma-nvim,luk400/vim-jukit&type=Date)](https://star-history.com/#kiyoon/jupynium.nvim&imbue-ai/jupyter_ascending&imbue-ai/jupyter_ascending.vim&dccsillag/magma-nvim&luk400/vim-jukit&Date)

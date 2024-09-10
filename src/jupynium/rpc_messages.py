@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 from pynvim import Nvim
@@ -27,6 +29,7 @@ def receive_message(nvim: Nvim):
 def receive_all_pending_messages(nvim: Nvim):
     """
     It doesn't guarantee to grab all messages that are previously sent.
+
     Maybe the last one or two may still be in process.
     """
     events = []
