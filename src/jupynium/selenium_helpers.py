@@ -11,7 +11,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 logger = logging.getLogger(__name__)
 
 
-def wait_until_notebook_loaded(driver: WebDriver, timeout: int = 30):
+def wait_until_notebook_loaded(driver: WebDriver, timeout: int = 60):
     """Wait until the Jupyter Notebook is loaded."""
     try:
         WebDriverWait(driver, timeout).until(
