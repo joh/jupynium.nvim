@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.7] - 2025-11-14
+### :sparkles: New Features
+- [`144ab6e`](https://github.com/kiyoon/jupynium.nvim/commit/144ab6e46d2b42264c16a4f3c780d88feb0a89e8) - blink.cmp completion source *(commit by [@kiyoon](https://github.com/kiyoon))*
+- [`53200cb`](https://github.com/kiyoon/jupynium.nvim/commit/53200cbd2c277251c47ef4ffc1ead5051a3c1a85) - repeatable move compatibility for nvim-treesitter-textobjects main branch *(commit by [@kiyoon](https://github.com/kiyoon))*
+
+### :bug: Bug Fixes
+- [`bd875f9`](https://github.com/kiyoon/jupynium.nvim/commit/bd875f94131c95bf98c0e3673a118d14fd180ace) - custom firefox profile *(PR [#140](https://github.com/kiyoon/jupynium.nvim/pull/140) by [@nexus-chebykin](https://github.com/nexus-chebykin))*
+- [`da252c3`](https://github.com/kiyoon/jupynium.nvim/commit/da252c31b5011f984c2dd54e55f25034d5b40014) - crash when no profile is set *(PR [#143](https://github.com/kiyoon/jupynium.nvim/pull/143) by [@kiyoon](https://github.com/kiyoon))*
+
+
+## [v0.2.6] - 2025-02-18
+### :boom: BREAKING CHANGES
+- due to [`af57c1b`](https://github.com/kiyoon/jupynium.nvim/commit/af57c1bb314e024aba7806653cf728e8558f0d4d) - drop python 3.8, simplify dep, fix ruff *(commit by [@kiyoon](https://github.com/kiyoon))*:
+
+  drop python 3.8, simplify dep, fix ruff
+
+
+### :bug: Bug Fixes
+- [`b0b7157`](https://github.com/kiyoon/jupynium.nvim/commit/b0b71577c6e4a613b6a4180068dd0b2de0659e52) - **treesitter**: markdown injection *(commit by [@kiyoon](https://github.com/kiyoon))*
+- [`22fdc6c`](https://github.com/kiyoon/jupynium.nvim/commit/22fdc6c1161abe4e46de083aa0702f90970258a9) - JupyniumLoadFromIpynbTabAndSync *(commit by [@kiyoon](https://github.com/kiyoon))*
+
+
+## [v0.2.5] - 2024-11-14
+### :sparkles: New Features
+- [`828052e`](https://github.com/kiyoon/jupynium.nvim/commit/828052ece86a5470f97247f6621e8a577154ee41) - code cell # %% with additional comments *(PR [#127](https://github.com/kiyoon/jupynium.nvim/pull/127) by [@ESSO0428](https://github.com/ESSO0428))*
+
+### :recycle: Refactors
+- [`1e57296`](https://github.com/kiyoon/jupynium.nvim/commit/1e572965813719c9ef123f777d79814e91d1a2cf) - add Config and UserConfig types *(commit by [@kiyoon](https://github.com/kiyoon))*
+
+
 ## [v0.2.4] - 2024-06-17
 ### :boom: BREAKING CHANGES
 - due to [`d83c56a`](https://github.com/kiyoon/jupynium.nvim/commit/d83c56a9c886ded0b1ff6fe1e5a39512d7a06901) - drop python3.7, remove deprecated markdown cell syntax, hide migration guide banner *(PR [#119](https://github.com/kiyoon/jupynium.nvim/pull/119) by [@kiyoon](https://github.com/kiyoon))*:
@@ -58,3 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v0.2.2]: https://github.com/kiyoon/jupynium.nvim/compare/v0.2.1...v0.2.2
 [v0.2.3]: https://github.com/kiyoon/jupynium.nvim/compare/v0.2.2...v0.2.3
 [v0.2.4]: https://github.com/kiyoon/jupynium.nvim/compare/v0.2.2...v0.2.4
+[v0.2.5]: https://github.com/kiyoon/jupynium.nvim/compare/v0.2.4...v0.2.5
+[v0.2.6]: https://github.com/kiyoon/jupynium.nvim/compare/v0.2.5...v0.2.6
+[v0.2.7]: https://github.com/kiyoon/jupynium.nvim/compare/v0.2.6...v0.2.7

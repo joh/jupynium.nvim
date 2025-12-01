@@ -1,8 +1,11 @@
 # Jupynium: Control Jupyter Notebook on Neovim with ZERO Compromise
 
-<a href="https://github.com/kiyoon/jupynium.nvim/actions/workflows/tests.yml">
-<img src="https://github.com/kiyoon/jupynium.nvim/workflows/Tests/badge.svg?style=flat" />
-</a>
+|  |  |
+|--|--|
+|[![Ruff](https://img.shields.io/badge/Ruff-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://github.com/astral-sh/ruff) [![StyLua](https://img.shields.io/badge/stylua-%232C2D72.svg?style=for-the-badge&logo=lua&logoColor=white)](https://github.com/JohnnyMorganz/StyLua) |[![Actions status](https://github.com/kiyoon/jupynium.nvim/workflows/Style%20checking/badge.svg)](https://github.com/kiyoon/jupynium.nvim/actions)|
+| [![Ruff](https://img.shields.io/badge/Ruff-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://github.com/astral-sh/ruff) | [![Actions status](https://github.com/kiyoon/jupynium.nvim/workflows/Linting/badge.svg)](https://github.com/kiyoon/jupynium.nvim/actions) |
+| [![pytest](https://img.shields.io/badge/pytest-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://github.com/pytest-dev/pytest) | [![Actions status](https://github.com/kiyoon/jupynium.nvim/workflows/Tests/badge.svg)](https://github.com/kiyoon/jupynium.nvim/actions) |
+| [![uv](https://img.shields.io/badge/uv-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://github.com/astral-sh/uv) | [![Actions status](https://github.com/kiyoon/jupynium.nvim/workflows/Check%20pip%20compile%20sync/badge.svg)](https://github.com/kiyoon/jupynium.nvim/actions) |
 
 **It's just like a markdown live preview, but it's Jupyter Notebook live preview!**
 
@@ -33,8 +36,7 @@ The Jupynium server will receive events from Neovim, keep the copy of the buffer
   - Other browsers are not supported due to their limitation with Selenium (see [#49](https://github.com/kiyoon/jupynium.nvim/issues/49#issuecomment-1443304753))
 - 🦎 Mozilla geckodriver
   - May already be installed with Firefox. Check `geckodriver -V`
-- 🐍 Python >= 3.8
-  - Supported Python installation methods include system-level and [Conda](https://docs.conda.io/en/latest/miniconda.html)
+- 🐍 Python >= 3.9
 - 📔 Jupyter Notebook >= 6.2
   - Jupyter Lab is not supported
   - 
@@ -51,14 +53,20 @@ Don't forget to upgrade your notebook and install nbclassic (`pip install --upgr
 
 ### Install Python
 
-Don't have system Python 3.8? You can use [Conda](https://docs.conda.io/en/latest/miniconda.html):
+Don't have system Python 3.9? You can use [uv](https://github.com/astral-sh/uv) which downloads python and creates a virtual environment.
+
+```bash
+# This downloads python 3.13 if it doesn't exist.
+uv venv ~/.virtualenvs/jupynium --python=3.13
+```
+
+Or with [Conda](https://docs.conda.io/en/latest/miniconda.html):
 
 ```bash
 conda create -n jupynium python=3
-conda activate jupynium
 ```
 
-Upgrade pip. This solves many problems:
+If you want to use system python, (not conda or uv), upgrade pip. This solves many problems:
 
 ```bash
 # pip >= 23.0 recommended
@@ -76,6 +84,7 @@ With vim-plug:
 
 ```vim
 Plug 'kiyoon/jupynium.nvim', { 'do': 'pip3 install --user .' }
+" Plug 'kiyoon/jupynium.nvim', { 'do': 'uv pip install . --python=$HOME/.virtualenvs/jupynium/bin/python' }
 " Plug 'kiyoon/jupynium.nvim', { 'do': 'conda run --no-capture-output -n jupynium pip install .' }
 Plug 'rcarriga/nvim-notify'   " optional
 Plug 'stevearc/dressing.nvim' " optional, UI for :JupyniumKernelSelect
@@ -85,6 +94,7 @@ With packer.nvim:
 
 ```lua
 use { "kiyoon/jupynium.nvim", run = "pip3 install --user ." }
+-- use { "kiyoon/jupynium.nvim", run = "uv pip install . --python=$HOME/.virtualenvs/jupynium/bin/python" }
 -- use { "kiyoon/jupynium.nvim", run = "conda run --no-capture-output -n jupynium pip install ." }
 use { "rcarriga/nvim-notify" }   -- optional
 use { "stevearc/dressing.nvim" } -- optional, UI for :JupyniumKernelSelect
@@ -97,8 +107,8 @@ With 💤lazy.nvim:
   {
     "kiyoon/jupynium.nvim",
     build = "pip3 install --user .",
+    -- build = "uv pip install . --python=$HOME/.virtualenvs/jupynium/bin/python",
     -- build = "conda run --no-capture-output -n jupynium pip install .",
-    -- enabled = vim.fn.isdirectory(vim.fn.expand "~/miniconda3/envs/jupynium"),
   },
   "rcarriga/nvim-notify",   -- optional
   "stevearc/dressing.nvim", -- optional, UI for :JupyniumKernelSelect
@@ -246,7 +256,9 @@ hi! link JupyniumMagicCommand Keyword
 
 </details>
 
-#### Optionally, configure `nvim-cmp` to show Jupyter kernel completion
+#### Optionally, configure `nvim-cmp` / `blink.cmp` to show Jupyter kernel completion
+
+**nvim-cmp**:
 
 ```lua
 local cmp = require "cmp"
@@ -269,6 +281,29 @@ cmp.setup {
   },
 }
 ```
+
+**blink.cmp**:
+
+```lua
+require("blink.cmp").setup {
+  sources = {
+    default = {
+      "jupynium",
+      -- ...
+    },
+    providers = {
+      jupynium = {
+        name = "Jupynium",
+        module = "jupynium.blink_cmp",
+        -- Consider higher priority than LSP
+        score_offset = 100,
+      },
+      -- ...
+    },
+  },
+}
+```
+
 
 #### Optionally, configure `nvim-ufo` to fold cells
 
@@ -561,6 +596,20 @@ The program is in the alpha stage. If it crashes it's likely that the whole brow
 3. Changing tab ordering or making it to a separate window is OK.
 
 ## 🤔 FAQ
+
+> Firefox doesn't run.
+
+Make sure your setup with selenium has no problem. Run the following python code to see if selenium is even working.
+
+```python
+# Run with the same environment Jupynium is installed.
+from selenium import webdriver
+driver = webdriver.Firefox()
+driver.get("https://www.selenium.dev/selenium/web/web-form.html")
+```
+
+If you're using Ubuntu 22.04 or higher, you need to either install firefox with apt (not snap) or put snap geckodriver in `$PATH`.
+See <https://stackoverflow.com/questions/72405117/selenium-geckodriver-profile-missing-your-firefox-profile-cannot-be-loaded>
 
 > 🌽 How do I use different languages / kernels?
 
